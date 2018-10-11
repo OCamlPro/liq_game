@@ -1,0 +1,19 @@
+List = module("ocp-build:List", "1.0");
+
+dapp = "liqgame-";
+
+OCaml.program(dapp + "crawler",
+   ocaml + {
+     files = [
+       "ezierRequest.ml";
+       "options.ml";
+       "request.ml";
+       "crawler.ml";
+     ];
+     requires = [
+       "ezjsonm";
+       "lwt";
+       "curl";
+       "curl.lwt";
+       ]
+   });

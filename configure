@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# configure submodules first
+echo Updating GIT Submodules
+git submodule init
+git submodule update
+
+echo Configuring Submodules
+(cd libs/ez-api; ./configure $*) || (printf "Error in libs/ez-api/configure. Aborting.\n"; exit 2) || exit 2 
+(cd libs/ez-pgocaml; ./configure $*) ||  (printf "Error in libs/ez-pgocaml/configure. Aborting.\n"; exit 2) || exit 2 
+(cd libs/ocplib-jsutils; ./configure $*) ||  (printf "Error in libs/ocplib-jsutils/configure. Aborting.\n";  exit 2) || exit 2 
+
+echo Configuring Project
+(cd autoconf; ./configure $*) || exit 2

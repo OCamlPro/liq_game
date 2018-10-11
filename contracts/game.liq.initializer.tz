@@ -1,0 +1,21 @@
+parameter address;
+storage
+  (pair :storage
+     (option %game
+        (pair :game
+           (nat %number)
+           (pair (mutez %payed) (contract :UnitContract %player unit))))
+     (address %trusted_server));
+code { DUP ;
+       DIP { CDR } ;
+       CAR ;
+       DUP ;
+       DUP @trusted_server ;
+       NONE (pair :game
+               (nat %number)
+               (pair (mutez %payed) (contract :UnitContract %player unit))) ;
+       PAIR %game %trusted_server ;
+       DIP { DROP } ;
+       NIL operation ;
+       PAIR ;
+       DIP { DROP ; DROP } };

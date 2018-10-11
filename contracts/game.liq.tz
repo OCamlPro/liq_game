@@ -1,0 +1,110 @@
+parameter
+  (or :_entries
+     (nat %_Liq_entry_play)
+     (or (nat %_Liq_entry_finish) (unit %_Liq_entry_fund)));
+storage
+  (pair :storage
+     (option %game
+        (pair :game
+           (nat %number)
+           (pair (mutez %payed) (contract :UnitContract %player unit))))
+     (address %trusted_server));
+code { DUP ;
+       DIP { CDR } ;
+       CAR ;
+       DUP @parameter ;
+       IF_LEFT
+         { RENAME @number_slash_3 ;
+           DUUUP @storage ;
+           PUSH nat 100 ;
+           DUUUP @number ;
+           COMPARE ;
+           GT ;
+           IF { PUSH string "number must be <= 100" ; FAILWITH } { UNIT } ;
+           DROP ;
+           BALANCE ;
+           AMOUNT ;
+           PUSH nat 2 ;
+           MUL ;
+           COMPARE ;
+           GT ;
+           IF { PUSH string "I don't have enough money for this bet" ; FAILWITH }
+              { UNIT } ;
+           DROP ;
+           DUP @storage ;
+           CAR %game ;
+           IF_NONE
+             { DUP @storage ;
+               CDR %trusted_server ;
+               SENDER ;
+               CONTRACT unit ;
+               IF_NONE
+                 { PUSH string "Sender must call with a UnitContract.instance" ; FAILWITH }
+                 {} ;
+               RENAME @player ;
+               AMOUNT @payed ;
+               PAIR %payed %player ;
+               DUUUUP @number ;
+               PAIR %number ;
+               SOME ;
+               PAIR @storage %game %trusted_server ;
+               NIL operation ;
+               PAIR }
+             { DUP @g ; PUSH string "Game already started with" ; PAIR ; FAILWITH } ;
+           DIP { DROP ; DROP } }
+         { IF_LEFT
+             { RENAME @random_number_slash_10 ;
+               DUUUP @storage ;
+               DUP @storage ;
+               CDR %trusted_server ;
+               SENDER ;
+               COMPARE ;
+               NEQ ;
+               IF { PUSH string "Random numbers cannot be generated" ; FAILWITH } { UNIT } ;
+               DROP ;
+               DUP @storage ;
+               CAR %game ;
+               IF_NONE
+                 { PUSH string "No game already started" ; FAILWITH }
+                 { DUUP @storage ;
+                   CDR %trusted_server ;
+                   NONE (pair :game
+                           (nat %number)
+                           (pair (mutez %payed) (contract :UnitContract %player unit))) ;
+                   PAIR @storage %game %trusted_server ;
+                   DUUP @game ;
+                   CAR %number ;
+                   PUSH nat 101 ;
+                   DUUUUUUP @random_number ;
+                   EDIV ;
+                   IF_NONE
+                     { PUSH string "Random number must be <= 100" ; FAILWITH }
+                     { CDR @r } ;
+                   RENAME @random_number ;
+                   COMPARE ;
+                   LT ;
+                   IF { NIL operation }
+                      { NIL operation ;
+                        DUUUP @game ;
+                        CDDR %player ;
+                        PUSH nat 100 ;
+                        DUUUUUP @game ;
+                        CAR %number ;
+                        DUUUUUUP @game ;
+                        CDAR %payed ;
+                        MUL ;
+                        EDIV ;
+                        IF_NONE { PUSH mutez 0 } { CAR @g } ;
+                        RENAME @gain ;
+                        DUUUUUP @game ;
+                        CDAR %payed ;
+                        ADD @reimbursed ;
+                        UNIT ;
+                        TRANSFER_TOKENS ;
+                        CONS } ;
+                   DIIP { DROP } ;
+                   RENAME @ops ;
+                   PAIR } ;
+               DIP { DROP ; DROP } }
+             { DROP ; DUUP ; NIL operation ; PAIR } } ;
+       DIP { DROP ; DROP } };

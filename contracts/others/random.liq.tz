@@ -1,0 +1,47 @@
+parameter (or :_entries (unit %_Liq_entry_register) (nat %_Liq_entry_gen));
+storage
+  (pair :storage
+     (bool %registered)
+     (pair (address %trusted_server)
+           (contract :Game %game_contract
+              (or :_entries
+                 (nat %_Liq_entry_play)
+                 (or (nat %_Liq_entry_finish) (unit %_Liq_entry_fund))))));
+code { DUP ;
+       DIP { CDR } ;
+       CAR ;
+       DUP @parameter ;
+       IF_LEFT
+         { DROP ;
+           DUUP ;
+           CDR ;
+           PUSH bool True ;
+           PAIR @storage %registered ;
+           NIL operation ;
+           PAIR }
+         { RENAME @random_number_slash_6 ;
+           DUUUP @storage ;
+           DUP @storage ;
+           CDAR %trusted_server ;
+           SENDER ;
+           COMPARE ;
+           NEQ ;
+           IF { PUSH string "Random numbers cannot be generated" ; FAILWITH } { UNIT } ;
+           DROP ;
+           CDR ;
+           PUSH bool False ;
+           PAIR @storage %registered ;
+           DUP ;
+           NIL operation ;
+           DUUUP ;
+           DIIIP { DROP } ;
+           CDDR %game_contract ;
+           PUSH mutez 0 ;
+           DUUUUUP ;
+           DIIIIIP { DROP } ;
+           LEFT %_Liq_entry_finish % unit ;
+           RIGHT % %_ nat ;
+           TRANSFER_TOKENS ;
+           CONS ;
+           PAIR } ;
+       DIP { DROP ; DROP } };

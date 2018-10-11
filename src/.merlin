@@ -1,0 +1,10 @@
+S ./**
+B ../_obuild/**
+
+PKG ezjsonm
+PKG curl
+PKG lwt
+PKG imagelib
+PKG js_of_ocaml
+PKG js_of_ocaml-tyxml
+PKG js_of_ocaml-ppx
