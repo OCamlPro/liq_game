@@ -1,7 +1,7 @@
 {
   "verbosity": 0,
-  "game_contract_hash": "KT1N61Q65h4t2BRXGRjQfMGBtEx3Pm8upV3s",
-  "origination_block": "BLZffmAPXejbfXVt2p7hGjsUD1qHr4TziFKjtoFQHqzs6mqH5fn",
+  "game_contract_hash": "KT1DUNGC2eUpRH56ivoaD5eMQP9DyksqfQ7k",
+  "origination_block": "BLus5xDuMvjU8GSVgyecC199v2ZvoxEDC9rcptq4MywDtVXGkKS",
   "node": "http://zeronet-node.tzscan.io",
   "private_key": "edsk3Pjh28uJj2WS9F6zp6qfBXukbgAtggoovjZAsA6ic1sgnv6E9N"
 }
