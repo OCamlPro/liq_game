@@ -1,23 +1,22 @@
 parameter
   (or :_entries
-     (nat %_Liq_entry_play)
+     (pair %_Liq_entry_play nat key_hash)
      (or (nat %_Liq_entry_finish) (unit %_Liq_entry_fund)));
 storage
   (pair :storage
-     (option %game
-        (pair :game
-           (nat %number)
-           (pair (mutez %payed) (contract :UnitContract %player unit))))
-     (address %trusted_server));
+     (option %game (pair :game (nat %number) (pair (mutez %bet) (key_hash %player))))
+     (address %oracle_id));
 code { DUP ;
-       DIP { CDR } ;
-       CAR ;
+       DIP { CDR @storage_slash_1 } ;
+       CAR @parameter_slash_2 ;
        DUP @parameter ;
        IF_LEFT
-         { RENAME @number_slash_3 ;
+         { RENAME @_number_player_slash_3 ;
            DUUUP @storage ;
+           DUUP ;
+           CAR @number ;
            PUSH nat 100 ;
-           DUUUP @number ;
+           DUUP @number ;
            COMPARE ;
            GT ;
            IF { PUSH string "number must be <= 100" ; FAILWITH } { UNIT } ;
@@ -31,32 +30,28 @@ code { DUP ;
            IF { PUSH string "I don't have enough money for this bet" ; FAILWITH }
               { UNIT } ;
            DROP ;
-           DUP @storage ;
+           DUUP @storage ;
            CAR %game ;
            IF_NONE
-             { DUP @storage ;
-               CDR %trusted_server ;
-               SENDER ;
-               CONTRACT unit ;
-               IF_NONE
-                 { PUSH string "Sender must call with a UnitContract.instance" ; FAILWITH }
-                 {} ;
-               RENAME @player ;
-               AMOUNT @payed ;
-               PAIR %payed %player ;
-               DUUUUP @number ;
+             { DUUP @storage ;
+               CDR %oracle_id ;
+               DUUUUP ;
+               CDR @player ;
+               AMOUNT @bet ;
+               PAIR %bet %player ;
+               DUUUP @number ;
                PAIR %number ;
                SOME ;
-               PAIR @storage %game %trusted_server ;
+               PAIR @storage %game %oracle_id ;
                NIL operation ;
                PAIR }
              { DUP @g ; PUSH string "Game already started with" ; PAIR ; FAILWITH } ;
-           DIP { DROP ; DROP } }
+           DIP { DROP ; DROP ; DROP } }
          { IF_LEFT
              { RENAME @random_number_slash_10 ;
                DUUUP @storage ;
                DUP @storage ;
-               CDR %trusted_server ;
+               CDR %oracle_id ;
                SENDER ;
                COMPARE ;
                NEQ ;
@@ -66,43 +61,46 @@ code { DUP ;
                CAR %game ;
                IF_NONE
                  { PUSH string "No game already started" ; FAILWITH }
-                 { DUUP @storage ;
-                   CDR %trusted_server ;
-                   NONE (pair :game
-                           (nat %number)
-                           (pair (mutez %payed) (contract :UnitContract %player unit))) ;
-                   PAIR @storage %game %trusted_server ;
-                   DUUP @game ;
+                 { DUP @game ;
+                   CDDR %player ;
+                   IMPLICIT_ACCOUNT @dest ;
+                   DUUUP @storage ;
+                   CDR %oracle_id ;
+                   NONE (pair :game (nat %number) (pair (mutez %bet) (key_hash %player))) ;
+                   PAIR @storage %game %oracle_id ;
+                   DUUUP @game ;
                    CAR %number ;
                    PUSH nat 101 ;
-                   DUUUUUUP @random_number ;
+                   DUUUUUUUP @random_number ;
                    EDIV ;
-                   IF_NONE
-                     { PUSH string "Random number must be <= 100" ; FAILWITH }
-                     { CDR @r } ;
+                   IF_NONE { UNIT ; FAILWITH } { CDR @r } ;
                    RENAME @random_number ;
                    COMPARE ;
                    LT ;
-                   IF { NIL operation }
+                   IF { NIL operation ;
+                        DUUUP @dest ;
+                        PUSH mutez 0 ;
+                        UNIT ;
+                        TRANSFER_TOKENS ;
+                        CONS }
                       { NIL operation ;
-                        DUUUP @game ;
-                        CDDR %player ;
+                        DUUUP @dest ;
                         PUSH nat 100 ;
-                        DUUUUUP @game ;
-                        CAR %number ;
                         DUUUUUUP @game ;
-                        CDAR %payed ;
+                        CAR %number ;
+                        DUUUUUUUP @game ;
+                        CDAR %bet ;
                         MUL ;
                         EDIV ;
                         IF_NONE { PUSH mutez 0 } { CAR @g } ;
                         RENAME @gain ;
-                        DUUUUUP @game ;
-                        CDAR %payed ;
+                        DUUUUUUP @game ;
+                        CDAR %bet ;
                         ADD @reimbursed ;
                         UNIT ;
                         TRANSFER_TOKENS ;
                         CONS } ;
-                   DIIP { DROP } ;
+                   DIIP { DROP ; DROP } ;
                    RENAME @ops ;
                    PAIR } ;
                DIP { DROP ; DROP } }

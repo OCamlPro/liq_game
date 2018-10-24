@@ -1,20 +1,15 @@
 parameter address;
 storage
   (pair :storage
-     (option %game
-        (pair :game
-           (nat %number)
-           (pair (mutez %payed) (contract :UnitContract %player unit))))
-     (address %trusted_server));
+     (option %game (pair :game (nat %number) (pair (mutez %bet) (key_hash %player))))
+     (address %oracle_id));
 code { DUP ;
-       DIP { CDR } ;
-       CAR ;
+       DIP { CDR @_storage } ;
+       CAR @_parameter ;
        DUP ;
-       DUP @trusted_server ;
-       NONE (pair :game
-               (nat %number)
-               (pair (mutez %payed) (contract :UnitContract %player unit))) ;
-       PAIR %game %trusted_server ;
+       DUP @oracle_id ;
+       NONE (pair :game (nat %number) (pair (mutez %bet) (key_hash %player))) ;
+       PAIR %game %oracle_id ;
        DIP { DROP } ;
        NIL operation ;
        PAIR ;

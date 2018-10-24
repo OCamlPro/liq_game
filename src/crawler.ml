@@ -62,7 +62,7 @@ let option_of_michelson_json some json =
 
 
 type gameparam =
-  | Play of int
+  | Play of int * string
   | Finish of int
   | Fund
 
@@ -96,13 +96,15 @@ let random_storage_of_json json =
 let gameparam_of_json json =
   match
     variant_of_michelson_json
-      int_of_michelson_json
+      (pair_of_michelson_json
+         int_of_michelson_json
+         string_of_michelson_json)
       (variant_of_michelson_json
          int_of_michelson_json
          unit_of_michelson_json)
       json
   with
-  | Left n -> Play n
+  | Left (n, k) -> Play (n, k)
   | Right (Left n) -> Finish n
   | Right (Right ()) -> Fund
 
@@ -167,7 +169,7 @@ let rec update_of_one_transaction ?(internal=false) block_hash tr_json =
         let parameters = Ezjsonm.(find tr_json ["parameters"]) in
         let param = gameparam_of_json parameters in
         match param with
-        | Play number ->
+        | Play (number, _) ->
           Format.printf "%s played %d@." source number;
           gen_random_number block_hash
         | Finish rand ->

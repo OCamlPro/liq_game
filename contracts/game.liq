@@ -1,20 +1,21 @@
-[%%version 0.4]
+[%%version 0.402]
 
 type game = {
   number : nat;
-  payed : tez;
-  player : UnitContract.instance;
+  bet : tez;
+  player : key_hash;
 }
 
 type storage = {
   game : game option;
-  trusted_server : address;
+  oracle_id : address;
 }
 
-let%init storage (trusted_server : address) =
-  { game = (None : game option); trusted_server }
+let%init storage (oracle_id : address) =
+  { game = (None : game option); oracle_id }
 
-let%entry play (number : nat) storage =
+(* Start a new game *)
+let%entry play ((number : nat), (player : key_hash)) storage =
   if number > 100p then failwith "number must be <= 100";
   if 2p * Current.amount () > Current.balance () then
     failwith "I don't have enough money for this bet";
@@ -22,37 +23,37 @@ let%entry play (number : nat) storage =
   | Some g ->
     failwith ("Game already started with", g)
   | None ->
-    let player = match UnitContract.at (Current.sender ()) with
-      | None -> failwith "Sender must call with a UnitContract.instance"
-      | Some c -> c in
-    let payed = Current.amount () in
-    let storage = storage.game <- Some { number; payed; player } in
+    let bet = Current.amount () in
+    let storage = storage.game <- Some { number; bet; player } in
     (([] : operation list), storage)
 
+(* Receive a random number from the oracle and compute outcome of the
+   game *)
 let%entry finish (random_number : nat) storage =
   let random_number = match random_number / 101p with
-    | None -> failwith "Random number must be <= 100"
+    | None -> failwith ()
     | Some (_, r) -> r in
-  if Current.sender () <> storage.trusted_server then
+  if Current.sender () <> storage.oracle_id then
     failwith ("Random numbers cannot be generated");
   match storage.game with
   | None -> failwith "No game already started"
   | Some game ->
+    let dest = Account.default game.player in
     let ops =
       if random_number < game.number then
-        (* Loose *)
-        ([] : operation list)
+        (* Lose, transfer 0 for log *)
+        [ Contract.transfer ~dest ~amount:0tz ]
       else
         (* Win *)
-        let gain = match (game.payed * game.number / 100p) with
+        let gain = match (game.bet * game.number / 100p) with
           | None -> 0tz
           | Some (g, _) -> g in
-        let reimbursed = game.payed + gain in
-        [ game.player.main () ~amount:reimbursed ]
+        let reimbursed = game.bet + gain in
+        [ Contract.transfer ~dest ~amount:reimbursed ]
     in
     let storage = storage.game <- (None : game option) in
     (ops, storage)
 
 (* accept funds *)
-let%entry fund (_p : unit) storage =
+let%entry fund _ storage =
   ([] : operation list), storage
