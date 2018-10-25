@@ -216,10 +216,14 @@ let crawl_block block_hash =
   get_block_timestamp block_hash >>= fun timestamp ->
   let info_json =
     Ezjsonm.(update info_json ["last_updated"] (Some (string timestamp))) in
+  let info_json =
+    Ezjsonm.(update info_json ["last_handled_block"] (Some (string block_hash)))
+  in
   crawl_operations block_hash ops >>= fun () ->
   let oc = open_out info_file in
   Ezjsonm.to_channel oc (match info_json with `O v -> `O v | _ -> assert false);
   close_out oc;
+  Options.last_handled_block := block_hash;
   return_unit
 
 let rec blocks_to_handle acc head =
@@ -246,10 +250,6 @@ let crawl () =
   get_head_hash () >>= fun head ->
   blocks_to_handle [] head >>= fun blocks ->
   Lwt_list.iter_s crawl_block blocks >>= fun () ->
-  begin match List.rev blocks with
-  | [] -> ()
-  | b :: _ -> Options.last_handled_block := b
-  end;
   return_unit
 
 
@@ -262,6 +262,7 @@ let main () =
   loop ()
 
 let () =
+  init_last_block "info.json";
   init_config "config.json" (* default *);
   Arg.parse (Arg.align [
       "--config", Arg.String init_config,
