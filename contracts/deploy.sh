@@ -39,6 +39,7 @@ $TEZOS_CLIENT -w 0 originate contract liqgame for $MANAGER \
               running $HERE/game.liq.tz \
               --fee 0 -q --force \
               --spendable \
+              --delegatable \
               --init "$INIT" | tee /tmp/liqgamedeploy.log
 
 CONTRACT=$(grep 'New contract' /tmp/liqgamedeploy.log \
