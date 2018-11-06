@@ -1,4 +1,4 @@
-[%%version 0.402]
+[%%version 0.403]
 
 type game = {
   number : nat;
@@ -39,18 +39,17 @@ let%entry finish (random_number : nat) storage =
   match storage.game with
   | None -> failwith "No game already started"
   | Some game ->
-    let dest = Account.default game.player in
     let ops =
       if random_number < game.number then
         (* Lose, transfer 1utz for log *)
-        [ Contract.transfer ~dest ~amount:0.000_001tz ]
+        [ Account.transfer ~dest:game.player ~amount:0.000_001tz ]
       else
         (* Win *)
         let gain = match (game.bet * game.number / 100p) with
           | None -> 0tz
           | Some (g, _) -> g in
         let reimbursed = game.bet + gain in
-        [ Contract.transfer ~dest ~amount:reimbursed ]
+        [ Account.transfer ~dest:game.player ~amount:reimbursed ]
     in
     let storage = storage.game <- (None : game option) in
     (ops, storage)
