@@ -14,8 +14,8 @@ AMOUNT=$4
 
 
 TEZOS_NODE=$(cat $HERE/../config.json | jq -r ".node" | awk -F[/] '{print $3}')
-TEZOS_ADDR=$(echo "$TEZOS_NODE" | awk -F[:] '{print $1}')
-TEZOS_PORT=$(echo "$TEZOS_NODE" | awk -F[:] '{print $2}')
+TEZOS_ADDR=$(echo "$TEZOS_NODE" | awk -F: '{OFS=":";NF--;print $0;}')
+TEZOS_PORT=$(echo "$TEZOS_NODE" | awk -F: '{print $NF}')
 if [ -z "$TEZOS_PORT" ] ; then
     TEZOS_PORT="80"
 fi
