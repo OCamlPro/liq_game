@@ -1,6 +1,6 @@
 let verbosity = ref 0
 let game_contract_hash = ref "$GAME_CONTRACT"
-let last_handled_block = ref ""
+let last_handled_blocks = ref []
 let host = ref "http://127.0.0.1:8732"
 let sk = ref "edsk"
 (* let output = ref "image.png"
@@ -17,7 +17,8 @@ let init_last_block config_file =
   try
     let ic = open_in config_file in
     let config = Ezjsonm.from_channel ic in
-    set_option config last_handled_block "last_handled_block" get_string;
+    set_option config last_handled_blocks "last_handled_blocks"
+      (get_list get_string) ;
     close_in ic
   with Sys_error _ ->
     Format.eprintf "No file %s, starting from origination block" config_file
@@ -28,8 +29,9 @@ let init_config config_file =
   let config = Ezjsonm.from_channel ic in
   set_option config verbosity "verbosity" get_int;
   set_option config game_contract_hash "game_contract_hash" get_string;
-  if !last_handled_block = "" then
-    set_option config last_handled_block "origination_block" get_string;
+  if !last_handled_blocks = [] then
+    set_option config last_handled_blocks "origination_block"
+      (fun j -> [get_string j]) ;
   set_option config host "node" get_string;
   set_option config sk "private_key" get_string;
   (* set_option config output "output" get_string;

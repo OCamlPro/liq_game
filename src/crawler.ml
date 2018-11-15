@@ -11,6 +11,8 @@ open Request
 
 
 let chunk_size = ref 100
+let max_keep = 20
+let kept_nb = ref 1
 
 let _ =
   Random.init (Unix.time () +. (Sys.time () *. 100000.) |> int_of_float)
@@ -200,6 +202,16 @@ let crawl_operations block_hash ops =
   Ezjsonm.get_list (fun op -> op) ops
   |> Lwt_list.iter_s (crawl_one_operation block_hash)
 
+let save_block block_hash =
+  if !kept_nb < max_keep then begin
+    last_handled_blocks := block_hash :: !last_handled_blocks;
+    incr kept_nb
+  end
+  else
+    last_handled_blocks :=
+      block_hash ::
+      List.(!last_handled_blocks |> rev |> tl |> rev)
+
 let crawl_block block_hash =
   Printf.eprintf "%s\n%!" block_hash;
   get (Printf.sprintf "/chains/main/blocks/%s/operations/3" block_hash)
@@ -214,17 +226,28 @@ let crawl_block block_hash =
       json
     with _ -> Ezjsonm.dict [] in
   get_block_timestamp block_hash >>= fun timestamp ->
+  save_block block_hash;
   let info_json =
     Ezjsonm.(update info_json ["last_updated"] (Some (string timestamp))) in
   let info_json =
-    Ezjsonm.(update info_json ["last_handled_block"] (Some (string block_hash)))
+    Ezjsonm.(update info_json ["last_handled_blocks"]
+               (Some (list string !last_handled_blocks)))
   in
   crawl_operations block_hash ops >>= fun () ->
   let oc = open_out info_file in
   Ezjsonm.to_channel oc (match info_json with `O v -> `O v | _ -> assert false);
   close_out oc;
-  Options.last_handled_block := block_hash;
   return_unit
+
+let in_known_blocks h =
+  if List.mem h !last_handled_blocks then
+    let rec roll_back l = match l with
+      | [] -> assert false
+      | bh :: _ when bh = h -> l
+      | _ :: l -> roll_back l in
+    last_handled_blocks := roll_back !last_handled_blocks;
+    true
+  else false
 
 let rec blocks_to_handle acc head =
   get (Printf.sprintf "/chains/main/blocks?length=%d&head=%s"
@@ -236,7 +259,7 @@ let rec blocks_to_handle acc head =
   try
     let acc =
       List.fold_left (fun acc h ->
-          if h = !last_handled_block then raise (Stop acc);
+          if in_known_blocks h then raise (Stop acc);
           h :: acc
         ) acc l
     in
@@ -263,6 +286,7 @@ let main () =
 
 let () =
   init_last_block "info.json";
+  kept_nb := List.length !last_handled_blocks;
   init_config "config.json" (* default *);
   Arg.parse (Arg.align [
       "--config", Arg.String init_config,
@@ -271,7 +295,7 @@ let () =
       " Increase verbosity level";
       "--contract", Arg.String (fun c -> game_contract_hash := c),
       "<hash> Specify contract to monitor";
-      "--from", Arg.String (fun b -> last_handled_block := b),
+      "--from", Arg.String (fun b -> last_handled_blocks := [b]),
       "<hash> Start monitoring at this block hash, usually orignation of \
        contract";
       "--node", Arg.String (fun h -> host := h),
