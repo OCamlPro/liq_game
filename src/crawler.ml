@@ -286,7 +286,6 @@ let main () =
 
 let () =
   init_last_block "info.json";
-  kept_nb := List.length !last_handled_blocks;
   init_config "config.json" (* default *);
   Arg.parse (Arg.align [
       "--config", Arg.String init_config,
@@ -309,4 +308,5 @@ accordingly.
 
 Available options:|};
 
+  kept_nb := List.length !last_handled_blocks;
   Lwt_main.run (main ())
