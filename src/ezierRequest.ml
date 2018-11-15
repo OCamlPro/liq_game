@@ -15,6 +15,7 @@ let initialize_connection host path =
   Curl.set_tcpnodelay c true;
   Curl.set_verbose c false;
   Curl.set_post c false;
+  Curl.set_encoding c Curl.CURL_ENCODING_GZIP;
   Curl.set_url c url; r,c
 
 let post ?(content_type = "application/json") host path data =
