@@ -3,6 +3,8 @@ let game_contract_hash = ref "$GAME_CONTRACT"
 let last_handled_blocks = ref []
 let host = ref "http://127.0.0.1:8732"
 let sk = ref "edsk"
+let tezos_client = ref "tezos-client"
+let oracle_account = ref "oracle_liqgame"
 (* let output = ref "image.png"
  * let image_size = 1000
  * let hide_file = ref "hide.json" *)
@@ -34,6 +36,8 @@ let init_config config_file =
       (fun j -> [get_string j]) ;
   set_option config host "node" get_string;
   set_option config sk "private_key" get_string;
+  set_option config tezos_client "tezos_client" get_string;
+  set_option config oracle_account "oracle_account" get_string;
   (* set_option config output "output" get_string;
    * set_option config hide_file "hide_file" get_string; *)
   close_in ic

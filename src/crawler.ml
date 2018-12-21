@@ -136,20 +136,49 @@ let liq_command () =
                   contracts/game.liq"
     !sk !host
 
-let call addr entry parameter =
+let call_liquidity addr entry parameter =
   Printf.sprintf "%s --call %s %s %s"
     (liq_command ()) addr entry parameter
   |> (fun c -> Format.printf "LIQUIDITY: %s@." c; c)
   |> Sys.command
   |> ignore
 
+
+let call_tezos_client randnb =
+  let dft_port =
+    match String.sub !host 0 7 with
+    | "http://" -> "80"
+    | "https://" -> "443"
+    | _ -> "80" in
+  let addrport = String.sub !host 7 (String.length !host - 7) in
+  let addr, port = match String.split_on_char ':' addrport with
+    | [addr] -> addr, dft_port
+    | [addr; port] -> addr, port
+    | _ -> addrport, dft_port in
+  let cmd =
+    Printf.sprintf "%s \
+                    -A %s \
+                    -P %s \
+                    transfer 0 from %s \
+                    to %s \
+                    --arg 'Right (Left %d)' \
+                   "
+      !tezos_client
+      addr
+      port
+      !oracle_account
+      !game_contract_hash
+      randnb in
+  Format.printf "TEZOS CLIENT: %s@." cmd;
+  ignore (Sys.command cmd)
+
 let get_storage block_hash contract =
   get (Printf.sprintf "/chains/main/blocks/%s/context/contracts/%s/storage"
          block_hash contract) >|= Ezjsonm.from_string
 
 let gen_random_number block_hash =
-  let rand = (string_of_int (Random.int 101) ^ "p") in
-  call !game_contract_hash "finish" rand;
+  let rand = Random.int 101 in
+  call_tezos_client rand;
   return_unit
 
 let rec update_of_one_transaction ?(internal=false) block_hash tr_json =
